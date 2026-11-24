@@ -123,7 +123,8 @@ button:active{transform:scale(.98)}
   <label for="key">AI 키 (Claude API 키)</label><input type="password" id="key" placeholder="sk-ant-..." autocomplete="off">
   <p class="hint">키가 없으면 기본 문구로 만들어져요. 키는 이 폰에만 저장돼요.</p>
   <button class="go" id="closeSet">저장하고 닫기</button>
-  <div class="ver" id="ver"></div>
+  <button class="ghost" id="updBtn" style="width:100%;margin-top:10px">업데이트 확인</button>
+  <div class="ver"><span id="ver"></span> · <span id="updSt"></span></div>
 </div></div>
 
 <div class="toast" id="toast" hidden></div>
