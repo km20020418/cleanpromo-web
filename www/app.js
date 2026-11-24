@@ -7,12 +7,12 @@ const UPDATE_URL = 'https://km20020418.github.io/cleanpromo-web/update/version.j
 const VERSION = window.APP_VERSION || 0;
 
 const CH = [
-  {k:'instagram', n:'인스타그램', btn:'인스타에 올리기', how:'글이 복사돼요 → 인스타 고르고 → 문구 칸을 길게 눌러 붙여넣기. 표지·청소 전·청소 후·문의 4장이 한 번에 넘어가요.'},
+  {k:'instagram', n:'인스타그램', btn:'인스타에 올리기', how:'글이 복사돼요 → 인스타 고르고 → 문구 칸을 길게 눌러 붙여넣기. 표지·청소 전·청소 후·달라진 점·문의 5장이 한 번에 넘어가요.'},
   {k:'blog', n:'네이버 블로그', btn:'블로그에 올리기', how:'글이 복사돼요 → 블로그 앱에서 첫 줄은 제목, 나머지는 본문에 붙여넣기. 첫 사진을 대표이미지로 지정하세요.'},
   {k:'daangn', n:'당근', btn:'당근에 올리기', how:'글이 복사돼요 → 당근 비즈프로필 소식 쓰기에 붙여넣기'},
   {k:'place', n:'플레이스·카카오', btn:'플레이스·카카오에 올리기', how:'글이 복사돼요 → 스마트플레이스 소식 / 카카오채널 소식에 붙여넣기'}
 ];
-const LABEL = {cover:'인스타 표지', contact:'인스타 문의', blog:'블로그 대표', square:'당근·카카오', story:'스토리'};
+const LABEL = {cover:'인스타 1 표지', before:'인스타 2 청소 전', after:'인스타 3 청소 후', detail:'인스타 4 달라진 점', contact:'인스타 5 문의', blog:'블로그 대표', square:'당근·카카오', story:'스토리'};
 const MODELS = ['claude-sonnet-5-5', 'claude-sonnet-4-5', 'claude-haiku-4-5'];
 const DEF = {logo1:'청소', logo2:'전문', bTel:'010-7532-4080', bSvc:'입주 · 사무실 · 매장 · 상가 · 학원',
   bPts:'깔끔하고 꼼꼼한 청소\n정기 관리 가능\n합리적인 비용', bBadge:'여성 안심 청소', bArea:'', bInsta:'', key:''};
@@ -56,7 +56,7 @@ const b64 = d => d.slice(d.indexOf(',')+1);
 function data(){
   const b = brand(), kind = $('kind').value, place = val('place');
   return Object.assign({}, b, {title: $('title').value.trim() || defTitle(), place, kind,
-    sub: texts.sub || [place, kind].filter(Boolean).join(' · '), before: imgs.B, after: imgs.A, char: charImg});
+    sub: texts.sub || [place, kind].filter(Boolean).join(' · '), changes: Array.isArray(texts.changes) ? texts.changes : null, before: imgs.B, after: imgs.A, char: charImg});
 }
 const defTitle = () => `${$('kind').value},\n새것처럼 깨끗하게`;
 async function renderAll(){
@@ -93,7 +93,7 @@ async function aiTexts(key){
 이번 현장: ${$('kind').value}, 장소: ${val('place') || '미입력'}, 메모: ${val('memo') || '없음'}
 따뜻하고 친근한 사장님 말투로, 과장 광고 표현("최고","1위","100%") 없이 쓰세요.
 아래 JSON 하나만 출력하세요. 다른 말은 쓰지 마세요.
-{"title":"디자인 카드 제목. 사진 속 변화를 담은 짧은 문구 2줄, 각 줄 11자 이내, 줄 사이는 \\n","sub":"제목 아래 작은 설명 한 줄, 30자 이내(장소 · 청소 종류 · 특징)","instagram":"인스타 캡션 5~8줄, 빈 줄 후 지역·청소종류 해시태그 12~18개","blog":"첫 줄은 검색에 잘 걸리는 블로그 제목(지역+청소종류+후기). 다음 줄부터 본문 600~900자, 중간에 [사진: 청소 전], [사진: 청소 후] 자리 표시, 마지막에 문의 안내","daangn":"당근 비즈프로필 소식 4~6줄, 이웃에게 말하듯","place":"네이버 플레이스/카카오채널 소식 3~4줄"}`;
+{"title":"디자인 카드 제목. 사진 속 변화를 담은 짧은 문구 2줄, 각 줄 11자 이내, 줄 사이는 \\n","sub":"제목 아래 작은 설명 한 줄, 30자 이내(장소 · 청소 종류 · 특징)","changes":["사진에서 실제로 보이는 달라진 점 3개. 각 14자 이내 짧은 문구(예: 욕실 물때 제거)"],"instagram":"인스타 캡션 5~8줄, 빈 줄 후 지역·청소종류 해시태그 12~18개","blog":"첫 줄은 검색에 잘 걸리는 블로그 제목(지역+청소종류+후기). 다음 줄부터 본문 600~900자, 중간에 [사진: 청소 전], [사진: 청소 후] 자리 표시, 마지막에 문의 안내","daangn":"당근 비즈프로필 소식 4~6줄, 이웃에게 말하듯","place":"네이버 플레이스/카카오채널 소식 3~4줄"}`;
   const content = [
     {type:'text', text:'[청소 전]'}, {type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64(scaled(imgs.B, 1024, .8))}},
     {type:'text', text:'[청소 후]'}, {type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64(scaled(imgs.A, 1024, .8))}},
@@ -178,7 +178,7 @@ const jpg = k => canv[k].toDataURL('image/jpeg', .92);
 $('share').onclick = async () => {
   await renderAll();
   const t = texts[cur] || '', B = scaled(imgs.B, 2048, .9), A = scaled(imgs.A, 2048, .9);
-  const set = {instagram:[jpg('cover'), B, A, jpg('contact')], blog:[jpg('blog'), B, A], daangn:[jpg('square')], place:[jpg('square')]}[cur];
+  const set = {instagram:['cover','before','after','detail','contact'].map(jpg), blog:[jpg('blog'), B, A], daangn:[jpg('square')], place:[jpg('square')]}[cur];
   shareFiles(set, t, cur !== 'instagram');
 };
 $('story').onclick = async () => { await renderAll(); shareFiles([jpg('story')], '', false); };
