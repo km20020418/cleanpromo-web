@@ -1,0 +1,1 @@
+{"appId":"kr.cleanpromo.app","appName":"청소홍보","webDir":"www","plugins":{"CapacitorHttp":{"enabled":true},"CapacitorUpdater":{"autoUpdate":false,"statsUrl":"","channelUrl":"","updateUrl":""}}}
