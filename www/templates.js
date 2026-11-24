@@ -4,7 +4,7 @@
 const BLUE = '#5bb6e8', BLUE_TXT = '#1f86c7', INK = '#111418', GRAY = '#6b7280', WHITE = '#ffffff';
 const PT = '"Pretendard", system-ui, sans-serif', ANTON = '"Anton", "Pretendard", sans-serif', BHS = '"BHS", sans-serif';
 let LOGO = ['청소','전문'];
-const SIZES = {cover:[1080,1350], contact:[1080,1350], blog:[1080,1080], square:[1080,1080], story:[1080,1920]};
+const SIZES = {cover:[1080,1350], before:[1080,1350], after:[1080,1350], detail:[1080,1350], contact:[1080,1350], blog:[1080,1080], square:[1080,1080], story:[1080,1920]};
 
 function rr(x, X, Y, W, H, r){ x.beginPath(); x.moveTo(X+r, Y); x.arcTo(X+W, Y, X+W, Y+H, r); x.arcTo(X+W, Y+H, X, Y+H, r); x.arcTo(X, Y+H, X, Y, r); x.arcTo(X, Y, X+W, Y, r); x.closePath(); }
 function photo(x, im, X, Y, W, H, r = 0){
@@ -69,6 +69,34 @@ const T = {
     photo(x, d.before, 0, top, w, 1350 - top); photo(x, d.after, w + gap, top, w, 1350 - top);
     pill(x, '청소 전', 28, 1350 - 92, INK, WHITE, 30); pill(x, '청소 후', w + gap + 28, 1350 - 92, BLUE, INK, 30);
   },
+  /* 인스타 2·3장: 청소 전 / 청소 후 사진을 한 장 가득 */
+  before(x, d){ T._full(x, d, d.before, '청소 전', INK, WHITE); },
+  after(x, d){ T._full(x, d, d.after, '청소 후', BLUE, INK); },
+  _full(x, d, im, label, bg, fg){
+    photo(x, im, 0, 0, 1080, 1350);
+    const g = x.createLinearGradient(0, 1050, 0, 1350); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
+    x.fillStyle = g; x.fillRect(0, 1050, 1080, 300);
+    pill(x, label, 56, 56, bg, fg, 44);
+    font(x, 600, 36, PT); x.fillStyle = WHITE; x.fillText([d.place, d.kind].filter(Boolean).join(' · '), 60, 1290);
+    mark(x, 1080 - 60 - 126, 1350 - 60 - 84, 84);
+  },
+  /* 인스타 4장: 무엇이 달라졌는지 */
+  detail(x, d){
+    x.fillStyle = WHITE; x.fillRect(0, 0, 1080, 1350);
+    font(x, 800, 80, PT); x.fillStyle = INK; x.fillText('이렇게 달라졌어요', 64, 150);
+    const w = 466, h = 560, top = 210;
+    photo(x, d.before, 64, top, w, h, 16); photo(x, d.after, 64 + w + 20, top, w, h, 16);
+    pill(x, '청소 전', 84, top + h - 70, INK, WHITE, 28); pill(x, '청소 후', 104 + w, top + h - 70, BLUE, INK, 28);
+    const pts = (d.changes && d.changes.length ? d.changes : ['꼼꼼한 먼지 제거', '묵은 때 클리닝', '마무리 점검']).slice(0, 3);
+    pts.forEach((t, i) => {
+      const y = 880 + i*108;
+      x.fillStyle = BLUE; x.beginPath(); x.arc(94, y, 30, 0, Math.PI*2); x.fill();
+      x.strokeStyle = INK; x.lineWidth = 7; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.beginPath(); x.moveTo(80, y + 1); x.lineTo(91, y + 12); x.lineTo(110, y - 10); x.stroke();
+      const s = fitOne(x, t, 880, 46, 600, PT); font(x, 600, s, PT); x.fillStyle = INK; x.textBaseline = 'middle'; x.fillText(t, 148, y + 2); x.textBaseline = 'alphabetic';
+    });
+    tel(x, d.tel, 1016, 1290, 52, INK, 'right'); mark(x, 64, 1224, 84);
+  },
   /* 인스타 마지막 장: 문의 안내 */
   contact(x, d){
     x.fillStyle = WHITE; x.fillRect(0, 0, 1080, 1350);
@@ -127,7 +155,7 @@ const T = {
 };
 
 window.CleanTpl = {
-  SIZES, kinds: Object.keys(T),
+  SIZES, kinds: Object.keys(T).filter(k => k[0] !== '_'),
   render(kind, d, canvas){
     const [w, h] = SIZES[kind]; const c = canvas || document.createElement('canvas'); c.width = w; c.height = h;
     LOGO = d.logo && d.logo.length === 2 ? d.logo : LOGO; const x = c.getContext('2d'); x.textBaseline = 'alphabetic'; T[kind](x, d); return c;
