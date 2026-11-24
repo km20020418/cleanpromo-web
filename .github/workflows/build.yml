@@ -1,0 +1,54 @@
+name: Build app and update
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm install
+      - name: Prepare web bundle
+        run: |
+          V=$GITHUB_RUN_NUMBER
+          echo "window.APP_VERSION=$V;" > www/version.js
+          mkdir -p www/fonts site/update
+          cp node_modules/@fontsource/black-han-sans/files/black-han-sans-korean-400-normal.woff2 node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2 www/fonts/
+          cp node_modules/pretendard/dist/web/static/woff2/Pretendard-{Regular,SemiBold,ExtraBold}.woff2 www/fonts/
+          (cd www && zip -qr ../site/update/bundle-$V.zip .)
+          echo "{\"version\":$V,\"url\":\"https://km20020418.github.io/cleanpromo-web/update/bundle-$V.zip\"}" > site/update/version.json
+      - run: npx cap add android
+      - run: pip install pillow && python3 scripts/icons.py
+      - run: npx cap sync android
+      - name: Fixed signing key
+        env: { KS: '${{ secrets.DEBUG_KEYSTORE }}' }
+        run: |
+          mkdir -p ~/.android
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > ~/.android/debug.keystore; fi
+      - run: cd android && ./gradlew assembleDebug
+      - name: Download page
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk site/cleanpromo.apk
+          printf '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><body style="font:20px sans-serif;padding:24px"><h1>청소홍보 앱</h1><p><a href="cleanpromo.apk">설치 파일 받기 (버전 %s)</a></p></body>' "$GITHUB_RUN_NUMBER" > site/index.html
+      - uses: actions/upload-artifact@v4
+        with: { name: cleanpromo-apk, path: site/cleanpromo.apk }
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
