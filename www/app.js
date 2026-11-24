@@ -225,20 +225,29 @@ async function openHistory(it){
 renderHistory();
 
 /* ---------- 자동 업데이트 (APK 재설치 없이 화면·기능 갱신) ---------- */
-async function checkUpdate(){
-  const U = P('CapacitorUpdater'); if(!U) return;
+function setUpd(t){ $('updSt').textContent = t; }
+let lastCheck = 0, checking = false;
+async function checkUpdate(manual){
+  const U = P('CapacitorUpdater');
+  if(!U){ if(manual) setUpd('휴대폰 앱에서만 업데이트돼요'); return; }
+  if(checking) return; checking = true; lastCheck = Date.now();
   try{ await U.notifyAppReady(); }catch(e){}
   try{
-    const r = await fetch(UPDATE_URL + '?t=' + Date.now(), {cache:'no-store'});
-    if(!r.ok) return;
+    setUpd('새 버전 확인 중…');
+    const r = await fetch(UPDATE_URL + '?t=' + Date.now());
+    if(!r.ok){ setUpd(`확인 실패 (${r.status})`); return; }
     const v = await r.json();
-    if(!(Number(v.version) > Number(VERSION))) return;
-    const busy = !!(imgs.B || imgs.A);
-    if(!busy) toast('새 버전으로 업데이트하는 중이에요…', 6000);
+    if(!(Number(v.version) > Number(VERSION))){ setUpd('최신 버전이에요'); return; }
+    setUpd(`버전 ${v.version} 받는 중…`);
+    if(manual) toast(`버전 ${v.version} 받는 중이에요…`, 5000);
     const bundle = await U.download({url: v.url, version: String(v.version)});
-    if(!(imgs.B || imgs.A)) await U.set({id: bundle.id});
-    else { await U.next({id: bundle.id}); toast('새 버전이 준비됐어요. 다음에 앱을 켜면 적용돼요', 3500); }
-  }catch(e){}
+    const busy = !!(imgs.B || imgs.A) || !$('setSheet').hidden;
+    if(busy && !manual){ await U.next({id: bundle.id}); setUpd(`버전 ${v.version} 준비됨 · 앱을 다시 켜면 적용돼요`); }
+    else { setUpd('적용 중…'); await U.set({id: bundle.id}); }
+  }catch(e){ setUpd('업데이트 오류: ' + ((e && (e.message || e.code)) || e)); }
+  finally{ checking = false; }
 }
-setTimeout(checkUpdate, 800);
+$('updBtn').onclick = () => checkUpdate(true);
+document.addEventListener('visibilitychange', () => { if(!document.hidden && Date.now() - lastCheck > 5*60*1000) checkUpdate(false); });
+setTimeout(() => checkUpdate(false), 800);
 })();
